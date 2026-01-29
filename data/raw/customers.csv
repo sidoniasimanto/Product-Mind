@@ -1,0 +1,51 @@
+customer_id,age,gender,location,segment,annual_income
+C001,36,M,Dubai,Enterprise,133208
+C002,49,M,Berlin,Tech Enthusiast,99784
+C003,30,F,Singapore,Student,22414
+C004,24,F,San Francisco,Enterprise,112079
+C005,44,F,Nairobi,Tech Enthusiast,64441
+C006,51,F,London,Student,27339
+C007,20,M,Berlin,Enterprise,131629
+C008,38,M,Lagos,Student,24613
+C009,29,F,Nairobi,Professional,78551
+C010,19,F,London,Tech Enthusiast,73894
+C011,45,F,Accra,Enterprise,166919
+C012,20,F,London,Professional,55050
+C013,47,F,Accra,Enterprise,115991
+C014,41,M,Dubai,Student,25291
+C015,55,F,Nairobi,Student,19732
+C016,48,M,Lagos,Professional,61783
+C017,27,M,Singapore,Professional,71694
+C018,27,M,Singapore,Enterprise,107388
+C019,31,M,Berlin,Student,20200
+C020,36,F,Dubai,Enterprise,101250
+C021,22,M,Berlin,Tech Enthusiast,63798
+C022,52,F,Dubai,Tech Enthusiast,96525
+C023,20,F,Toronto,Tech Enthusiast,115476
+C024,50,M,New York,Tech Enthusiast,112459
+C025,46,M,San Francisco,Student,24201
+C026,40,F,Singapore,Professional,54627
+C027,42,M,New York,Tech Enthusiast,95695
+C028,41,M,Nairobi,Student,28246
+C029,25,M,Toronto,Professional,89629
+C030,44,M,San Francisco,Student,22175
+C031,52,M,Toronto,Tech Enthusiast,116628
+C032,18,M,Nairobi,Tech Enthusiast,88803
+C033,29,M,Dubai,Student,25224
+C034,44,M,Nairobi,Student,24805
+C035,42,F,Nairobi,Professional,67477
+C036,54,M,Accra,Student,19999
+C037,39,M,London,Professional,70408
+C038,49,M,Dubai,Tech Enthusiast,87982
+C039,53,M,Nairobi,Student,20522
+C040,45,F,Nairobi,Enterprise,174625
+C041,37,M,Berlin,Professional,78791
+C042,44,F,San Francisco,Student,20558
+C043,45,M,Nairobi,Enterprise,153045
+C044,55,F,Toronto,Student,21538
+C045,29,M,Lagos,Enterprise,153867
+C046,24,F,Berlin,Professional,89112
+C047,41,F,Accra,Enterprise,161000
+C048,21,M,Singapore,Tech Enthusiast,62600
+C049,22,M,San Francisco,Tech Enthusiast,119262
+C050,49,M,Accra,Enterprise,113032
