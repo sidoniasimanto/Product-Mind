@@ -3,7 +3,7 @@ import requests
 import pandas as pd
 import plotly.express as px
 
-API_BASE_URL = "http://127.0.0.1:8000"
+API_BASE_URL = "https://product-mind-2.onrender.com"
 
 st.set_page_config(page_title="ProductMind AI", layout="wide")
 
