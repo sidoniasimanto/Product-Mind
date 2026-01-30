@@ -2,36 +2,75 @@ import streamlit as st
 import requests
 import pandas as pd
 import plotly.express as px
+import time
+
+# =========================================
+# CONFIG
+# =========================================
 
 API_BASE_URL = "https://product-mind-2.onrender.com"
 
-st.set_page_config(page_title="ProductMind AI", layout="wide")
+st.set_page_config(
+    page_title="Product Performance Dashboard",
+    layout="wide"
+)
 
 st.title("📊 Product Performance Dashboard")
 
-def fetch(endpoint):
-    return requests.get(f"{API_BASE_URL}{endpoint}").json()
+st.caption("Note: Backend may take 30–60 seconds to wake up (free hosting).")
 
-# ---------------- FETCH DATA ----------------
+# =========================================
+# SAFE FETCH FUNCTION (COLD START PROTECTED)
+# =========================================
+
+def fetch(endpoint, retries=8, delay=3):
+    url = f"{API_BASE_URL}{endpoint}"
+    placeholder = st.empty()
+
+    for attempt in range(retries):
+        try:
+            response = requests.get(url, timeout=10)
+
+            if response.status_code == 200:
+                placeholder.empty()
+                return response.json()
+
+            placeholder.warning(
+                f"Backend waking up... Attempt {attempt+1}/{retries}"
+            )
+
+        except requests.exceptions.RequestException:
+            placeholder.warning(
+                f"Connecting to backend... Attempt {attempt+1}/{retries}"
+            )
+
+        time.sleep(delay)
+
+    placeholder.error("Backend unavailable. Please refresh.")
+    return None
+
+# =========================================
+# FETCH DATA
+# =========================================
 
 metrics = fetch("/metrics/products")
 decisions = fetch("/products/decisions")
 
+if not metrics or not decisions:
+    st.stop()
+
 df_metrics = pd.DataFrame(metrics)
 df_decisions = pd.DataFrame(decisions)
 
-# Safe merge (avoid duplicate column conflicts)
 df = df_metrics.merge(
-    df_decisions[[
-        "product_id",
-        "recommended_action",
-        "risk_level"
-    ]],
+    df_decisions[["product_id", "recommended_action", "forecast_risk"]],
     on="product_id",
     how="left"
 )
 
-# ---------------- KPI ROW ----------------
+# =========================================
+# KPIs
+# =========================================
 
 total_revenue = df["total_revenue"].sum()
 avg_margin = df["profit_margin"].mean()
@@ -39,7 +78,8 @@ avg_margin = df["profit_margin"].mean()
 top_category = (
     df.groupby("category")["total_revenue"]
     .sum()
-    .idxmax()
+    .sort_values(ascending=False)
+    .index[0]
 )
 
 col1, col2, col3 = st.columns(3)
@@ -48,121 +88,89 @@ col1.metric("Total Revenue", f"${total_revenue:,.0f}")
 col2.metric("Average Profit Margin", f"{avg_margin:.1%}")
 col3.metric("Top Selling Category", top_category)
 
-st.divider()
+# =========================================
+# CATEGORY HEATMAP
+# =========================================
 
-# ---------------- HEATMAP ----------------
-
-st.subheader("Category Risk Distribution")
+st.subheader("Category Performance Heatmap")
 
 heatmap_data = (
-    df.groupby(["category", "risk_level"])["total_revenue"]
-    .sum()
+    df.groupby("category")
+    .agg({
+        "total_revenue": "sum",
+        "profit_margin": "mean"
+    })
     .reset_index()
 )
 
 fig = px.density_heatmap(
     heatmap_data,
     x="category",
-    y="risk_level",
+    y="profit_margin",
     z="total_revenue",
     color_continuous_scale="Blues"
 )
 
 st.plotly_chart(fig, use_container_width=True)
 
-st.divider()
+# =========================================
+# TABLE
+# =========================================
 
-# ---------------- PRODUCT TABLE ----------------
+st.subheader("Product Performance Table")
 
-st.subheader("Product Overview")
+st.dataframe(
+    df[[
+        "product_id",
+        "product_name",
+        "category",
+        "total_units_sold",
+        "total_revenue",
+        "profit_margin",
+        "recommended_action",
+        "forecast_risk"
+    ]],
+    use_container_width=True
+)
 
-display_df = df[[
-    "product_id",
-    "product_name",
-    "category",
-    "total_units_sold",
-    "total_revenue",
-    "profit_margin",
-    "risk_level",
-    "recommended_action"
-]]
-
-st.dataframe(display_df, use_container_width=True)
-
-# =====================================================
+# =========================================
 # SIMPLE RULE-BASED ASSISTANT
-# =====================================================
+# =========================================
 
-st.divider()
 st.subheader("💬 Executive Assistant")
 
-if "chat_open" not in st.session_state:
-    st.session_state.chat_open = False
+question = st.text_input("Ask about portfolio risk, growth, or summary:")
 
-if st.button("Open Assistant"):
-    st.session_state.chat_open = True
+if question:
+    q = question.lower()
 
-if st.session_state.chat_open:
+    high = df[df["forecast_risk"] == "HIGH_RISK"]
+    medium = df[df["forecast_risk"] == "MEDIUM_RISK"]
+    stable = df[df["forecast_risk"] == "STABLE"]
+    growth = df[df["recommended_action"] == "SCALE_UP"]
 
-    user_input = st.text_input("Ask a portfolio question:")
+    if "high risk" in q:
+        st.write(high[["product_name", "forecast_risk"]])
 
-    if user_input:
+    elif "medium risk" in q:
+        st.write(medium[["product_name", "forecast_risk"]])
 
-        question = user_input.lower()
+    elif "stable" in q:
+        st.write(stable[["product_name", "forecast_risk"]])
 
-        high_risk = df[df["risk_level"] == "HIGH_RISK"]
-        medium_risk = df[df["risk_level"] == "MEDIUM_RISK"]
-        low_risk = df[df["risk_level"] == "LOW_RISK"]
-        stable = df[df["risk_level"] == "STABLE"]
+    elif "growth" in q or "scale" in q:
+        st.write(growth[["product_name", "recommended_action"]])
 
-        if "high risk" in question:
-            st.write("### High Risk Products")
-            st.dataframe(high_risk[[
-                "product_name",
-                "category",
-                "profit_margin",
-                "total_revenue"
-            ]])
+    elif "summary" in q:
+        st.write(
+            f"""
+            Portfolio Summary:
+            - High Risk: {len(high)}
+            - Medium Risk: {len(medium)}
+            - Stable: {len(stable)}
+            - Growth: {len(growth)}
+            """
+        )
 
-        elif "medium risk" in question:
-            st.write("### Medium Risk Products")
-            st.dataframe(medium_risk[[
-                "product_name",
-                "category",
-                "profit_margin",
-                "total_revenue"
-            ]])
-
-        elif "low risk" in question:
-            st.write("### Low Risk Products")
-            st.dataframe(low_risk[[
-                "product_name",
-                "category",
-                "profit_margin",
-                "total_revenue"
-            ]])
-
-        elif "stable" in question:
-            st.write("### Stable Products")
-            st.dataframe(stable[[
-                "product_name",
-                "category",
-                "profit_margin",
-                "total_revenue"
-            ]])
-
-        elif "summary" in question or "overview" in question:
-
-            st.markdown(f"""
-            **Portfolio Summary**
-
-            • High Risk: {len(high_risk)}  
-            • Medium Risk: {len(medium_risk)}  
-            • Low Risk: {len(low_risk)}  
-            • Stable: {len(stable)}
-
-            Total Revenue: ${total_revenue:,.0f}
-            """)
-
-        else:
-            st.write("Please ask about: high risk, medium risk, low risk, stable, or summary.")
+    else:
+        st.write("Please ask about high risk, medium risk, growth or summary.")
